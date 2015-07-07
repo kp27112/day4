@@ -6,7 +6,8 @@
 
 int main(int argc, char* argv[])
 {
-	int port = 5050;
+	int port = atoi(argv[1]);
+
 	string ip = "127.0.0.1";
 
 	if (argc == 2) {
