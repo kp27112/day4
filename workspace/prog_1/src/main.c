@@ -32,9 +32,6 @@ int main(int argc, const char *argv[])
     char buff[BUFF_SIZE];
     ssize_t msg_len = 0;
 
-
-
-
     struct sockaddr_in srv_addr;
     struct sockaddr_in cli_addr;
     socklen_t cli_addr_len;
