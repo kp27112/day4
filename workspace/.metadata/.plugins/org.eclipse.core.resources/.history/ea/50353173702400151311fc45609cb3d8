@@ -1,0 +1,70 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <stdbool.h>
+#include <sys/types.h>
+#include <semaphore.h>
+
+sem_t pings, pongs;
+
+struct argument{
+    int liczba;
+};
+
+void* ping(void* a)
+{
+	int i=0,x;
+	struct argument *argument = a;
+	x = argument->liczba;
+
+	for (;i<x;i++) {
+	    sem_wait(&pings);
+	    printf("ping\n");
+	    sem_post(&pongs);
+
+	    	}
+
+	return 0;
+}
+
+
+void* pong(void* a)
+{
+	int j=0,z;
+	struct argument *argument = a;
+	z = argument->liczba;
+
+    for (;j<z;j++) {
+        sem_wait(&pongs);
+        printf("pong\n");
+        sem_post(&pings);
+    }
+
+	return 0;
+}
+
+
+
+int main(int c, char* v)
+{
+    printf("Liczba %d \n", atoi(v[1]));
+
+	struct argument *arg = malloc(sizeof(struct argument));
+	arg->liczba = atoi(v[1]);
+
+    sem_init(&pings, 0, 0);
+    sem_init(&pongs, 0, 1);
+
+    pthread_t ping_thread, pong_thread;
+
+    pthread_create(&ping_thread, NULL, ping, arg);
+    pthread_create(&pong_thread, NULL, pong, arg);
+
+    pthread_join(ping_thread, NULL);
+    pthread_join(pong_thread, NULL);
+    return 0;
+
+
+return 0;
+}

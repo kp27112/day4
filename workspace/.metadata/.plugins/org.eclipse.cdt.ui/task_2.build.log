@@ -1,0 +1,7 @@
+15:55:07 **** Incremental Build of configuration Default for project task_2 ****
+make all 
+cc -c -Wall -g src/main.c -o src/main.o
+cc src/main.o -lpthread -o prog
+
+15:55:07 Build Finished (took 416ms)
+

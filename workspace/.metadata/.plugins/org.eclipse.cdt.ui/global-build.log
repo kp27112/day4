@@ -1,0 +1,4 @@
+08:21:53 **** Incremental Build of configuration Default for project domowe ****
+make all 
+cc -c -Wall -g src/main.c -o src/main.o
+cc src/main.o -lpthread -o prog

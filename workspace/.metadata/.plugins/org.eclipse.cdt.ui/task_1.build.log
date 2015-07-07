@@ -1,0 +1,15 @@
+14:38:11 **** Incremental Build of configuration Default for project task_1 ****
+make all 
+cc -c -Wall -g src/main.c -o src/main.o
+src/main.c: In function ‘foo1’:
+src/main.c:11:9: warning: unused variable ‘p’ [-Wunused-variable]
+   pid_t p = fork();
+         ^
+src/main.c: In function ‘main’:
+src/main.c:22:11: warning: unused variable ‘p’ [-Wunused-variable]
+     pid_t p = fork();
+           ^
+cc src/main.o -lpthread -o prog
+
+14:38:12 Build Finished (took 455ms)
+

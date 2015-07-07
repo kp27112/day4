@@ -1,0 +1,71 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <stdbool.h>
+#include <sys/types.h>
+
+
+pthread_mutex_t mtx1 = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mtx2 = PTHREAD_MUTEX_INITIALIZER;
+
+bool s = 1;
+
+void* ping(void* a)
+{
+	pthread_cond_t* c1  = (pthread_cond_t*)a;
+	pthread_mutex_lock(&mtx1);
+	pthread_cond_wait(c1,&mtx1);
+
+	printf("PONG\n");
+	pthread_mutex_unlock(&mtx1);
+
+	return 0;
+}
+
+
+void* pong(void* a)
+{
+	pthread_cond_t* c2  = (pthread_cond_t*)a;
+	pthread_mutex_lock(&mtx2);
+	pthread_cond_wait(c2,&mtx2);
+
+	printf("PING\n");
+	pthread_mutex_unlock(&mtx2);
+
+	return 0;
+}
+
+
+
+int main(int c, char** v)
+{
+
+
+	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+	pthread_t t_id1, t_id2;
+
+
+	pthread_create(&t_id1,0,ping,&cond);
+	sleep(1);
+
+	pthread_create(&t_id2,0,pong,&cond);
+	sleep(1);
+
+	pthread_mutex_lock(&mtx1);
+	pthread_cond_signal(&cond);
+	pthread_mutex_unlock(&mtx1);
+	pthread_join(t_id1,0);
+
+	pthread_mutex_lock(&mtx2);
+	pthread_cond_signal(&cond);
+	pthread_mutex_unlock(&mtx2);
+	pthread_join(t_id2,0);
+
+
+
+
+
+
+return 0;
+}
