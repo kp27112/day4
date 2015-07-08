@@ -198,7 +198,7 @@ void Socket::Read(std::string& p_Data)
 	//TRACE_LOG << "Allock reading buffer" << std::endl;
 	scoped_array<char> text(new char[totalToRead]);
 	//TRACE_LOG << "Zeros reading buffer" << std::endl;
-	::memset(text.get(), 0, (totalToRead-1)*sizeof(char));
+	//::memset(text.get(), 0, (totalToRead-1)*sizeof(char));
 
 	size_t stillToRead = totalToRead;
 	while (stillToRead > 0) {
@@ -209,7 +209,7 @@ void Socket::Read(std::string& p_Data)
 			//for (int i = 0; i < ret; ++i)
 			//	std::cout << "ascii: " << (int)text.get()[i] << std::endl;
 			//std::cout << "red: " << ret << " data: \"" << p_Data  << "\"" << std::endl;
-			::memset(text.get(), 0, (ret-1)*sizeof(char));
+			//::memset(text.get(), 0, (ret-1)*sizeof(char));
 			stillToRead -= ret;
 		} else if (ret == 0) {
 			//p_ErrorMessage = "Eof receiveed - socket closed";

@@ -22,8 +22,15 @@ typedef struct user {
 
 user *users[256];
 int add_user(int fd, char* name);
+void handle_message(int fd, char *msg);
+void handle_login(int fd, char *msg);
+void handle_userlist(int fd);
+int send_message(int fd,char *msg,int msg_len);
+void clear_client(int fd);
+int send_ack(int fd, char reason, char *error);
 user* find_user_by_fd(int fd);
 user* find_user_by_name(char* name);
+
 
 void sig_handler(int signo)
 {
@@ -74,40 +81,177 @@ int handle_client(struct epoll_event* ev)
 
 	if (ev->events & EPOLLIN)
 	{
-
-
 		read(ev->data.fd,&lenr,sizeof(size_t));
-		buff=malloc(lenr*sizeof(char));
+		buff=malloc(lenr*sizeof(char)+1);
 		read(ev->data.fd,buff,lenr);
-		free(buff);
-
-		char *msg = "Mam to";
-		size_t lenw = strlen(msg);
-		write(ev->data.fd,&lenw,sizeof(size_t));
-		write(ev->data.fd,msg,lenw);
-
+		if(lenr <= 0)
+			return 1;
+		else{
+			handle_message(ev->data.fd,buff);
+			free(buff);
+		}
 	}
 	return 0;
 }
 
-void handle_message(char *msg)
+void handle_message(int fd, char *msg)
 {
 
+	switch(msg[0])
+	{
+	case '2' :
+		handle_login(fd, msg);
+		break;
+	case '6' :
+		handle_userlist(fd);
+		break;
+	case 'q':
+		clear_client(fd);
+		if(epoll_fd)
+			close(epoll_fd);
+		if(srv_fd)
+			close(srv_fd);
+		break;
+	default:
+		clear_client(fd);
+		if(epoll_fd)
+			close(epoll_fd);
+		break;
 
+	}
 }
-
 void handle_login(int fd, char *msg)
 {
-
-
+	char* name = malloc((strlen(msg)-1)*sizeof(char));
+	strcpy(name, msg+2);
+	if(add_user(fd,name) == 0 ){
+		send_ack(fd, '0', 0);
+	} else {
+		send_ack(fd, '1', "Error - server is full or name already exist");
+		clear_client(fd);
+	}
 }
 
-void handle_userlist(int fd, char *msg)
+int add_user(int fd, char* name)
 {
+	size_t i=0;
+
+	for(;i<CLIENTS;++i)
+		if (users[i] && (strcmp(users[i]->name,name) == 0) )
+			return 1;
+
+	i=0;
+	for(;i<CLIENTS;++i)
+		if(users[i] == 0)break;
+
+
+	if(i<CLIENTS)
+	{
+		users[i]=malloc(sizeof(user));
+		users[i]->fd = fd;
+		users[i]->name = name;
+		return 0;
+	}
+	return 1;
+}
+
+user* find_user_by_id(int fd, size_t* idx)
+{
+	size_t i=0;
+	for(i=0;i<CLIENTS;i++){
+		if(users[i] && users[i]->fd == fd){
+			if(idx) *idx = i;
+			return users[i];
+		}
+	}
+}
+
+void handle_userlist(int fd)
+{
+	char* m = 0;
+	size_t m_l = 0;
+	size_t i = 0;
+	size_t all_name_l = 0;
+	size_t name_l =0;
+	size_t msg_l = 0;
+	size_t user_c = 0;
+	size_t m_offset =0;
+
+	for(;i<CLIENTS;++i)
+	{
+		if(users[i]){
+			++user_c;
+			all_name_l += strlen(users[i]->name);
+		}
+
+	}
+
+	m_l = all_name_l + user_c + 1;
+	m = malloc((msg_l+1)*sizeof(char));
+
+	m[0]='7';
+	m_offset = 1;
+	for(i=0;i<CLIENTS;++i)
+	{
+		if(users[i]){
+			name_l = strlen(users[i]->name);
+			m[m_offset++] = '.';
+			strncpy(m + m_offset, users[i]->name, name_l);
+			m_offset += name_l;
+		}
+	}
+
+	m[m_l] = 0;
+
+	if(send_message(fd, m, m_l) != 0)
+		clear_client(fd);
 
 
 }
+int send_message(int fd, char* msg, int msg_len)
+{
+	if(msg_len>0){
+		write(fd,&msg_len,sizeof(char));
+		write(fd,msg,msg_len);
+		return 0;
+	}
+	return 1;
+}
 
+int send_ack(int fd, char reason, char *error)
+{
+	int len = 0;
+	char *m = 0;
+	if(reason == '0')
+	{
+		len = 4;
+		m = malloc(len*sizeof(size_t));
+		m[0]='1';
+		m[1]='.';
+		m[2]=reason;
+	}else{
+		len = strlen(error)+5;
+		m = malloc(len*sizeof(size_t));
+		m[0]='1';
+		m[1]='.';
+		m[2]=reason;
+		m[3]='.';
+		strcpy(m+4, error);
+
+	}
+	printf("%s", m);
+	if(send_message(fd, m, len) == 0)
+		return 0;
+	else
+		return 1;
+}
+
+void clear_client(int fd)
+{
+	close(fd);
+	close(srv_fd);
+
+}
 int init_server(int PORT, int CLIENTS)
 {
 
@@ -163,25 +307,8 @@ int init_server(int PORT, int CLIENTS)
 	return 0;
 }
 
-/*int add_user(int fd, char* name)
-{
-	size_t i=0;
-	user* u = find_user_by_fd(fd);
-	if(u)
-		return 1;
-	for(;i<CLIENTS;++i)
-		if(users[i] == 0)break;
 
-	if(i<CLIENTS)
-	{
-		users[i]=malloc(sizeof(user));
-		users[i]->fd = fd;
-		users[i]->name = name;
-		return 0;
-	}
-	return 1;
-}
- */
+
 int main(int argc, const char *argv[])
 {
 	int PORT = atoi(argv[1]);
