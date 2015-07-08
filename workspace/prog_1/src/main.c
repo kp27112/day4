@@ -39,8 +39,8 @@ int handle_server()
 	socklen_t cli_addr_len;
 	int cli_fd = -1;
 
-	//memset(&cli_addr_len, 1, sizeof(cli_addr_len));
-	memset(&cli_addr, 1, sizeof(cli_addr));
+	memset(&cli_addr_len, 1, sizeof(cli_addr_len));
+	memset(&cli_addr, 0, sizeof(cli_addr));
 
 	cli_fd = accept(srv_fd, (struct sockaddr*) &cli_addr, &cli_addr_len);
 
@@ -67,22 +67,25 @@ int handle_server()
 	return 0;
 
 }
-int handle_client(struct epoll_event* e)
+int handle_client(struct epoll_event* ev)
 {
 	size_t lenr = 0;
 	char *buff = 0;
 
-	if (e->events & EPOLLIN)
+	if (ev->events & EPOLLIN)
 	{
-		read(e->events,&lenr,sizeof(size_t));
+
+
+		read(ev->data.fd,&lenr,sizeof(size_t));
 		buff=malloc(lenr*sizeof(char));
-		read(e->data.fd,buff,lenr);
+		read(ev->data.fd,buff,lenr);
 		free(buff);
 
 		char *msg = "Mam to";
 		size_t lenw = strlen(msg);
-		write(e->data.fd,&lenw,sizeof(size_t));
-		write(e->data.fd,msg,lenw);
+		write(ev->data.fd,&lenw,sizeof(size_t));
+		write(ev->data.fd,msg,lenw);
+
 	}
 	return 0;
 }
@@ -160,7 +163,7 @@ int init_server(int PORT, int CLIENTS)
 	return 0;
 }
 
-int add_user(int fd, char* name)
+/*int add_user(int fd, char* name)
 {
 	size_t i=0;
 	user* u = find_user_by_fd(fd);
@@ -178,7 +181,7 @@ int add_user(int fd, char* name)
 	}
 	return 1;
 }
-
+ */
 int main(int argc, const char *argv[])
 {
 	int PORT = atoi(argv[1]);
@@ -201,7 +204,8 @@ int main(int argc, const char *argv[])
 		}
 
 		for (--i; i > -1; --i) {
-			if (es[i].data.fd == srv_fd) {
+			if (es[i].data.fd == srv_fd)
+			{
 				handle_server(PORT);
 			}else
 				handle_client(&es[i]);
